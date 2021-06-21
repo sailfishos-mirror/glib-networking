@@ -2635,7 +2635,7 @@ test_connection_binding_match_tls_unique (TestConnection *test,
  * please make sure the string below matches the output of
  * openssl x509 -outform der -in files/server.pem | openssl sha256 -binary | base64
  **/
-#define SERVER_CERT_DIGEST_B64 "kGOeAZnSeNtf5yzBZzUhbKFpW9qsPV+lIB/4t96OV+E="
+#define SERVER_CERT_DIGEST_B64 "+Kdi/G5P36Pzohv3xApyDKQk9aiN9vuPZoJchsydpm8="
 static void
 test_connection_binding_match_tls_server_end_point (TestConnection *test,
                                                     gconstpointer   data)
@@ -2770,6 +2770,59 @@ test_connection_binding_match_tls_exporter (TestConnection *test,
 
   g_assert_no_error (test->read_error);
   g_assert_no_error (test->server_error);
+}
+
+static void
+test_connection_oscp_must_staple (TestConnection *test,
+                                  gconstpointer   data)
+{
+  GSocketClient *client;
+  GIOStream *connection;
+  GError *error = NULL;
+
+#ifdef BACKEND_IS_GNUTLS
+  g_test_skip ("OCSP Must-Staple is not supported with the gnutls backend");
+  return;
+#endif
+
+  g_setenv ("G_TLS_OPENSSL_OCSP_ENABLED", "1", TRUE);
+
+  test->database = g_tls_file_database_new (tls_test_file_path ("ca-roots.pem"), &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (test->database);
+
+  start_async_server_service (test, G_TLS_AUTHENTICATION_NONE, WRITE_THEN_WAIT);
+
+  client = g_socket_client_new ();
+  connection = G_IO_STREAM (g_socket_client_connect (client, G_SOCKET_CONNECTABLE (test->address),
+                                                     NULL, &error));
+  g_assert_no_error (error);
+  g_object_unref (client);
+
+  test->client_connection = g_tls_client_connection_new (connection, test->identity, &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (test->client_connection);
+  g_object_unref (connection);
+
+  g_tls_connection_set_database (G_TLS_CONNECTION (test->client_connection), test->database);
+
+  g_tls_client_connection_set_validation_flags (G_TLS_CLIENT_CONNECTION (test->client_connection),
+                                                G_TLS_CERTIFICATE_VALIDATE_ALL);
+
+  read_test_data_async (test);
+  g_main_loop_run (test->loop);
+
+  close_server_connection (test);
+  wait_until_server_finished (test);
+
+  g_unsetenv ("G_TLS_OPENSSL_OCSP_ENABLED");
+
+  /* The certificate states it supports status_request but our server does not
+   * actually set or suppor that, so it always errors. */
+  g_assert_error (test->read_error, G_TLS_ERROR, G_TLS_ERROR_BAD_CERTIFICATE);
+
+  g_clear_error (&test->read_error);
+  g_clear_error (&test->server_error);
 }
 
 static void
@@ -2949,6 +3002,7 @@ main (int   argc,
 
   g_setenv ("GSETTINGS_BACKEND", "memory", TRUE);
   g_setenv ("GIO_USE_TLS", BACKEND, TRUE);
+  g_unsetenv ("G_TLS_OPENSSL_OCSP_ENABLED");
 
   g_assert_true (g_ascii_strcasecmp (G_OBJECT_TYPE_NAME (g_tls_backend_get_default ()), "GTlsBackend" BACKEND) == 0);
 
@@ -3064,6 +3118,8 @@ main (int   argc,
               setup_connection, test_connection_binding_match_tls_server_end_point, teardown_connection);
   g_test_add ("/tls/" BACKEND "/connection/binding/match-tls-exporter", TestConnection, NULL,
               setup_connection, test_connection_binding_match_tls_exporter, teardown_connection);
+  g_test_add ("/tls/" BACKEND "/connection/oscp/must-staple", TestConnection, NULL,
+              setup_connection, test_connection_oscp_must_staple, teardown_connection);
 
   ret = g_test_run ();
 

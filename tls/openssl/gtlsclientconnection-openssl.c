@@ -202,6 +202,12 @@ g_tls_client_connection_openssl_complete_handshake (GTlsConnectionBase  *tls,
   g_object_notify (G_OBJECT (client), "accepted-cas");
 }
 
+static gboolean
+use_ocsp (void)
+{
+  return g_getenv ("G_TLS_OPENSSL_OCSP_ENABLED") != NULL;
+}
+
 static GTlsCertificateFlags
 verify_ocsp_response (GTlsClientConnectionOpenssl *openssl,
                       GTlsCertificate             *peer_certificate)
@@ -213,16 +219,18 @@ verify_ocsp_response (GTlsClientConnectionOpenssl *openssl,
   long len = 0;
   unsigned char *p = NULL;
 
-  ssl = g_tls_connection_openssl_get_ssl (G_TLS_CONNECTION_OPENSSL (openssl));
-  len = SSL_get_tlsext_status_ocsp_resp (ssl, &p);
-  /* Soft fail in case of no response is the best we can do
-   * FIXME: this makes it security theater, why bother with OCSP at all? */
-  if (!p)
+  /* If we didn't request it earlier just ignore it now */
+  if (!use_ocsp ())
     return 0;
 
-  resp = d2i_OCSP_RESPONSE (NULL, (const unsigned char **)&p, len);
-  if (!resp)
-    return G_TLS_CERTIFICATE_GENERIC_ERROR;
+  ssl = g_tls_connection_openssl_get_ssl (G_TLS_CONNECTION_OPENSSL (openssl));
+  len = SSL_get_tlsext_status_ocsp_resp (ssl, &p);
+  if (p)
+    {
+      resp = d2i_OCSP_RESPONSE (NULL, (const unsigned char **)&p, len);
+      if (!resp)
+        return G_TLS_CERTIFICATE_GENERIC_ERROR;
+    }
 
   database = g_tls_connection_get_database (G_TLS_CONNECTION (openssl));
 
@@ -424,12 +432,6 @@ set_curve_list (GTlsClientConnectionOpenssl *client)
   SSL_CTX_set1_curves_list (client->ssl_ctx, curve_list);
 }
 #endif
-
-static gboolean
-use_ocsp (void)
-{
-  return g_getenv ("G_TLS_OPENSSL_OCSP_ENABLED") != NULL;
-}
 
 static gboolean
 g_tls_client_connection_openssl_initable_init (GInitable       *initable,

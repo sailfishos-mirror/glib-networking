@@ -327,6 +327,51 @@ g_tls_database_openssl_verify_ocsp_response (GTlsDatabaseOpenssl *self,
   int ocsp_status = 0;
   int i;
 
+  chain_openssl = convert_certificate_chain_to_openssl (G_TLS_CERTIFICATE_OPENSSL (chain));
+
+  priv = g_tls_database_openssl_get_instance_private (self);
+  if ((chain_openssl == NULL) ||
+      (priv->store == NULL))
+    {
+      errors = G_TLS_CERTIFICATE_GENERIC_ERROR;
+      goto end;
+    }
+
+  /* If we are missing a response we check if the chain requires a response ("Must-Staple") */
+  if (resp == NULL)
+    {
+      for (guint i_cert = 0; i_cert < sk_X509_num (chain_openssl); i_cert++)
+        {
+          X509 *cert = sk_X509_value (chain_openssl, i_cert);
+          int idx = -1; /* We ignore the return of this as we only expect 1 extension */
+          STACK_OF(ASN1_INTEGER) *features = X509_get_ext_d2i (cert, NID_tlsfeature, NULL, &idx);
+
+          if (!features)
+            {
+              X509_free (cert);
+              continue;
+            }
+
+          for (guint i_feature = 0; i_feature < sk_ASN1_INTEGER_num (features); i_feature++)
+            {
+              const long feature_id = ASN1_INTEGER_get (sk_ASN1_INTEGER_value (features, i_feature));
+              if (feature_id == 5 || feature_id == 17) /* status_request, status_request_v2 */
+                {
+                  errors = G_TLS_CERTIFICATE_GENERIC_ERROR;
+                  sk_ASN1_INTEGER_free (features);
+                  X509_free (cert);
+                  goto end;
+                }
+            }
+
+          sk_ASN1_INTEGER_free (features);
+          X509_free (cert);
+        }
+
+      /* not enabled, no error */
+      goto end;
+    }
+
   ocsp_status = OCSP_response_status (resp);
   if (ocsp_status != OCSP_RESPONSE_STATUS_SUCCESSFUL)
     {
@@ -336,15 +381,6 @@ g_tls_database_openssl_verify_ocsp_response (GTlsDatabaseOpenssl *self,
 
   basic_resp = OCSP_response_get1_basic (resp);
   if (basic_resp == NULL)
-    {
-      errors = G_TLS_CERTIFICATE_GENERIC_ERROR;
-      goto end;
-    }
-
-  chain_openssl = convert_certificate_chain_to_openssl (G_TLS_CERTIFICATE_OPENSSL (chain));
-  priv = g_tls_database_openssl_get_instance_private (self);
-  if ((chain_openssl == NULL) ||
-      (priv->store == NULL))
     {
       errors = G_TLS_CERTIFICATE_GENERIC_ERROR;
       goto end;
@@ -396,6 +432,9 @@ g_tls_database_openssl_verify_ocsp_response (GTlsDatabaseOpenssl *self,
     }
 
 end:
+  if (chain_openssl)
+    sk_X509_free (chain_openssl);
+
   if (basic_resp)
     OCSP_BASICRESP_free (basic_resp);
 
