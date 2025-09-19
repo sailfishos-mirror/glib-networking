@@ -133,7 +133,16 @@ end_openssl_io (GTlsConnectionOpenssl  *openssl,
     }
 
   if (err_code == SSL_ERROR_ZERO_RETURN)
-    return G_TLS_CONNECTION_BASE_OK;
+    {
+      if (SSL_get_shutdown (ssl) != 0)
+        {
+          g_set_error_literal (error, G_IO_ERROR,
+                               G_IO_ERROR_CONNECTION_CLOSED,
+                               _("TLS connection closed by peer"));
+          return G_TLS_CONNECTION_BASE_ERROR;
+        }
+      return G_TLS_CONNECTION_BASE_OK;
+    }
 
   if (status == G_TLS_CONNECTION_BASE_OK ||
       status == G_TLS_CONNECTION_BASE_WOULD_BLOCK ||
