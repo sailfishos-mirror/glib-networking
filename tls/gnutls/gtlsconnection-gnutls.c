@@ -397,7 +397,6 @@ end_gnutls_io (GTlsConnectionGnutls  *gnutls,
   GTlsConnectionBase *tls = G_TLS_CONNECTION_BASE (gnutls);
   GTlsConnectionBaseStatus status;
   gboolean handshaking;
-  gboolean ever_handshaked;
   GError *my_error = NULL;
 
   /* We intentionally do not check for GNUTLS_E_INTERRUPTED here
@@ -423,9 +422,8 @@ end_gnutls_io (GTlsConnectionGnutls  *gnutls,
   g_assert (status == G_TLS_CONNECTION_BASE_ERROR);
 
   handshaking = g_tls_connection_base_is_handshaking (tls);
-  ever_handshaked = g_tls_connection_base_ever_handshaked (tls);
 
-  if (handshaking && !ever_handshaked)
+  if (handshaking)
     {
       if (g_error_matches (my_error, G_IO_ERROR, G_IO_ERROR_FAILED) ||
           g_error_matches (my_error, G_IO_ERROR, G_IO_ERROR_BROKEN_PIPE))
@@ -447,12 +445,9 @@ end_gnutls_io (GTlsConnectionGnutls  *gnutls,
         }
     }
 
-  if (ret == GNUTLS_E_REHANDSHAKE)
-    return G_TLS_CONNECTION_BASE_REHANDSHAKE;
-
   if (ret == GNUTLS_E_PREMATURE_TERMINATION)
     {
-      if (handshaking && !ever_handshaked)
+      if (handshaking)
         {
           g_clear_error (&my_error);
           g_set_error (error, G_TLS_ERROR, G_TLS_ERROR_NOT_TLS,
@@ -845,41 +840,6 @@ g_tls_connection_gnutls_pull_timeout_func (gnutls_transport_ptr_t transport_data
   return 0;
 }
 
-static GTlsSafeRenegotiationStatus
-g_tls_connection_gnutls_handshake_thread_safe_renegotiation_status (GTlsConnectionBase *tls)
-{
-  GTlsConnectionGnutls *gnutls = G_TLS_CONNECTION_GNUTLS (tls);
-  GTlsConnectionGnutlsPrivate *priv = g_tls_connection_gnutls_get_instance_private (gnutls);
-
-  return gnutls_safe_renegotiation_status (priv->session) ? G_TLS_SAFE_RENEGOTIATION_SUPPORTED_BY_PEER
-                                                          : G_TLS_SAFE_RENEGOTIATION_UNSUPPORTED;
-}
-
-static GTlsConnectionBaseStatus
-g_tls_connection_gnutls_handshake_thread_request_rehandshake (GTlsConnectionBase  *tls,
-                                                              gint64               timeout,
-                                                              GCancellable        *cancellable,
-                                                              GError             **error)
-{
-  GTlsConnectionGnutls *gnutls = G_TLS_CONNECTION_GNUTLS (tls);
-  GTlsConnectionGnutlsPrivate *priv = g_tls_connection_gnutls_get_instance_private (gnutls);
-  GTlsConnectionBaseStatus status;
-  int ret;
-
-  /* On a client-side connection, gnutls_handshake() itself will start
-   * a rehandshake, so we only need to do something special here for
-   * server-side connections.
-   */
-  if (!G_IS_TLS_SERVER_CONNECTION (tls))
-    return G_TLS_CONNECTION_BASE_OK;
-
-  BEGIN_GNUTLS_IO (gnutls, G_IO_IN | G_IO_OUT, timeout, cancellable);
-  ret = gnutls_rehandshake (priv->session);
-  END_GNUTLS_IO (gnutls, G_IO_IN | G_IO_OUT, ret, status, N_("Error performing TLS handshake: %s"), error);
-
-  return status;
-}
-
 static GTlsCertificate *
 g_tls_connection_gnutls_retrieve_peer_certificate (GTlsConnectionBase *tls)
 {
@@ -948,8 +908,7 @@ g_tls_connection_gnutls_handshake_thread_handshake (GTlsConnectionBase  *tls,
   GTlsConnectionBaseStatus status;
   int ret;
 
-  if (!g_tls_connection_base_ever_handshaked (tls))
-    g_tls_connection_gnutls_set_handshake_priority (gnutls);
+  g_tls_connection_gnutls_set_handshake_priority (gnutls);
 
   if (timeout > 0)
     {
@@ -1447,8 +1406,6 @@ g_tls_connection_gnutls_class_init (GTlsConnectionGnutlsClass *klass)
   gobject_class->finalize                                = g_tls_connection_gnutls_finalize;
 
   base_class->prepare_handshake                          = g_tls_connection_gnutls_prepare_handshake;
-  base_class->handshake_thread_safe_renegotiation_status = g_tls_connection_gnutls_handshake_thread_safe_renegotiation_status;
-  base_class->handshake_thread_request_rehandshake       = g_tls_connection_gnutls_handshake_thread_request_rehandshake;
   base_class->handshake_thread_handshake                 = g_tls_connection_gnutls_handshake_thread_handshake;
   base_class->retrieve_peer_certificate                  = g_tls_connection_gnutls_retrieve_peer_certificate;
   base_class->verify_chain                               = g_tls_connection_gnutls_verify_chain;

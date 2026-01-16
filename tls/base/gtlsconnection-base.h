@@ -36,7 +36,6 @@ typedef enum {
   G_TLS_CONNECTION_BASE_OK,
   G_TLS_CONNECTION_BASE_WOULD_BLOCK,
   G_TLS_CONNECTION_BASE_TIMED_OUT,
-  G_TLS_CONNECTION_BASE_REHANDSHAKE,
   G_TLS_CONNECTION_BASE_TRY_AGAIN,
   G_TLS_CONNECTION_BASE_ERROR,
 } GTlsConnectionBaseStatus;
@@ -60,13 +59,6 @@ struct _GTlsConnectionBaseClass
 
   void                        (*prepare_handshake)          (GTlsConnectionBase       *tls,
                                                              gchar                   **advertised_protocols);
-  GTlsSafeRenegotiationStatus (*handshake_thread_safe_renegotiation_status)
-                                                            (GTlsConnectionBase        *tls);
-  GTlsConnectionBaseStatus    (*handshake_thread_request_rehandshake)
-                                                            (GTlsConnectionBase   *tls,
-                                                             gint64                timeout,
-                                                             GCancellable         *cancellable,
-                                                             GError              **error);
   GTlsConnectionBaseStatus    (*handshake_thread_handshake) (GTlsConnectionBase   *tls,
                                                              gint64                timeout,
                                                              GCancellable         *cancellable,
@@ -199,8 +191,6 @@ GCancellable             *g_tls_connection_base_get_read_cancellable    (GTlsCon
 GCancellable             *g_tls_connection_base_get_write_cancellable   (GTlsConnectionBase *tls);
 
 gboolean                  g_tls_connection_base_is_handshaking          (GTlsConnectionBase *tls);
-
-gboolean                  g_tls_connection_base_ever_handshaked         (GTlsConnectionBase *tls);
 
 gboolean                  g_tls_connection_base_handshake_thread_request_certificate
                                                                         (GTlsConnectionBase  *tls);
