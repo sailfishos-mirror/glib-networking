@@ -77,6 +77,7 @@ typedef struct
   GGnutlsCertificateCredentials *credentials;
   gnutls_session_t session;
   gchar *interaction_id;
+  gboolean previous_write_was_interrupted;
   GCancellable *cancellable;
 } GTlsConnectionGnutlsPrivate;
 
@@ -1312,6 +1313,78 @@ g_tls_connection_gnutls_read_message (GTlsConnectionBase  *tls,
   return status;
 }
 
+static ssize_t
+send_gnutls_record (GTlsConnectionGnutls *gnutls,
+                    const void           *buffer,
+                    size_t                count)
+{
+  GTlsConnectionGnutlsPrivate *priv = g_tls_connection_gnutls_get_instance_private (gnutls);
+  ssize_t ret;
+
+  /* The gnutls_record_send() API has an unfortunate quirk: if a write is
+   * interrupted, we are required to resend the exact same data as before.
+   * GOutputStream does not have this limitation, and we are a GOutputStream,
+   * so we have to hide this from the caller. Otherwise, the caller could resend
+   * different data than the original data, leading to trouble. GStreamer does
+   * this in practice, because the data it originally wanted to send might no
+   * longer be relevant, so it must be allowed.
+   *
+   * But the limitation exists for good reason: the data that has already been
+   * sent in the TLS stream may depend on data that has not yet been sent in the
+   * base stream that we are wrapping. Trying to write different data would be
+   * incorrect.
+   *
+   * The only way to make this work is to *pretend* that all data that we pass
+   * to gnutls_record_send() is written successfully and never interrupted, even
+   * though this is not actually true. We will then attempt to resend the data
+   * in the future.
+   *
+   * If the caller attempts to send new data or close the stream before we have
+   * successfully sent all previous data, then we'll fail it with an interrupted
+   * error to ensure we only have to deal with one partial send at a time. This
+   * is OK because we have not actually passed the data to GnuTLS, and the
+   * caller is able to handle the error.
+   *
+   * This has several downsides. The caller may receive an error for a
+   * previous write on a subsequent write, which is unfortunate but consistent
+   * with the behavior of writing in the context of filesystem operations, so
+   * shouldn't be too unexpected. Also, the follow-up write might never occur
+   * if the caller stops iterating the current thread-default main context. But
+   * we can at least guarantee that the caller always eventually receives an
+   * error on failure if the caller explicitly closes the stream.
+   */
+
+  if (priv->previous_write_was_interrupted)
+    {
+      /* 0-size NULL data means: attempt to resend previously-buffered data. */
+      ret = gnutls_record_send (priv->session, NULL, 0);
+
+      if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN)
+        return ret;
+
+      /* Problem solved! */
+      priv->previous_write_was_interrupted = FALSE;
+
+      if (ret < 0)
+        return ret;
+    }
+
+  ret = gnutls_record_send (priv->session, buffer, count);
+
+  if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN)
+    {
+      /* Pretend that we succeeded. */
+      ret = count;
+      priv->previous_write_was_interrupted = TRUE;
+
+
+    }
+  else
+    priv->previous_write_was_interrupted = FALSE;
+
+  return ret;
+}
+
 static GTlsConnectionBaseStatus
 g_tls_connection_gnutls_write (GTlsConnectionBase  *tls,
                                const void          *buffer,
@@ -1327,7 +1400,7 @@ g_tls_connection_gnutls_write (GTlsConnectionBase  *tls,
   gssize ret;
 
   BEGIN_GNUTLS_IO (gnutls, G_IO_OUT, timeout, cancellable);
-  ret = gnutls_record_send (priv->session, buffer, count);
+  ret = send_gnutls_record (gnutls, buffer, count);
   END_GNUTLS_IO (gnutls, G_IO_OUT, ret, status, N_("Error writing data to TLS socket"), error);
 
   *nwrote = MAX (ret, 0);
@@ -1378,7 +1451,7 @@ g_tls_connection_gnutls_write_message (GTlsConnectionBase  *tls,
 
   for (i = 0; i < num_vectors; i++)
     {
-      ret = gnutls_record_send (priv->session,
+      ret = send_gnutls_record (priv->session,
                                 vectors[i].buffer, vectors[i].size);
 
       if (ret < 0 || ret < vectors[i].size)

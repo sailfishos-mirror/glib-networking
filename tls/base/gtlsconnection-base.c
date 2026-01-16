@@ -1182,6 +1182,36 @@ static GSourceFuncs dtls_source_funcs =
   (GSourceDummyMarshal)g_cclosure_marshal_generic
 };
 
+/* Create a source corresponding to the underlying base stream or
+ * GDatagramBased.
+ */
+GSource *
+g_tls_connection_base_create_base_source (GTlsConnectionBase *tls,
+                                          GIOCondition        condition,
+                                          GCancellable       *cancellable)
+{
+  GTlsConnectionBasePrivate *priv = g_tls_connection_base_get_instance_private (tls);
+
+  if (g_tls_connection_base_is_dtls (tls))
+    return g_datagram_based_create_source (priv->base_socket,
+                                           condition,
+                                           cancellable);
+
+  /* What if it's not pollable? (g_pollable_output_stream_can_poll())
+   */
+  if (priv->tls_istream && condition & G_IO_IN)
+    return g_pollable_input_stream_create_source (G_POLLABLE_INPUT_STREAM (priv->tls_istream),
+                                                  cancellable);
+
+  if (priv->tls_ostream && condition & G_IO_OUT)
+    return g_pollable_output_stream_create_source (G_POLLABLE_OUTPUT_STREAM (priv->tls_ostream),
+                                                   cancellable);
+
+  /* FIXME: What if it's simply not a pollable stream? */
+  g_assert_not_reached ();
+}
+
+/* Create a source corresponding to the TLS stream. */
 GSource *
 g_tls_connection_base_create_source (GTlsConnectionBase  *tls,
                                      GIOCondition         condition,
