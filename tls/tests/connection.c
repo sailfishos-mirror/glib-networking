@@ -1207,10 +1207,6 @@ test_invalid_chain_with_alternative_ca_cert (TestConnection *test,
 
   g_tls_connection_set_database (G_TLS_CONNECTION (test->client_connection), test->database);
 
-  /* Make sure this test doesn't expire. */
-  g_tls_client_connection_set_validation_flags (G_TLS_CLIENT_CONNECTION (test->client_connection),
-                                                G_TLS_CERTIFICATE_VALIDATE_ALL & ~G_TLS_CERTIFICATE_EXPIRED);
-
   read_test_data_async (test);
   g_main_loop_run (test->loop);
   wait_until_server_finished (test);
