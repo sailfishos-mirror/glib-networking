@@ -468,11 +468,13 @@ run_echo_server (GThreadedSocketService *service,
     {
       nread = g_input_stream_read (istream, buf, sizeof (buf), NULL, &error);
       
+#if 0
       if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CONNECTION_CLOSED))
       {
         g_clear_error (&error);
         break;
       }
+#endif
 
       if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_WOULD_BLOCK))
         continue;
