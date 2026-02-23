@@ -2486,6 +2486,9 @@ g_tls_connection_base_close_internal (GIOStream      *stream,
   else
     {
       g_tls_log_debug (tls, "the TLS connection has been closed successfully");
+
+      g_assert (!close_error);
+      g_assert (!stream_error);
     }
 
   return success && status == G_TLS_CONNECTION_BASE_OK;
