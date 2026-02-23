@@ -284,6 +284,8 @@ test_create_certificate_pkcs11 (TestCertificate *test,
 
   g_assert_no_error (error);
   g_assert_nonnull (cert);
+
+  g_object_unref (cert);
 #endif
 }
 

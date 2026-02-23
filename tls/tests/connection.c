@@ -269,6 +269,7 @@ on_server_close_finish (GObject        *object,
   g_io_stream_close_finish (G_IO_STREAM (object), res, &error);
   // FIXME: https://gitlab.gnome.org/GNOME/glib-networking/issues/105
   // g_assert_no_error (error);
+  g_clear_error (&error);
 
   test->server_running = FALSE;
 }
@@ -506,6 +507,8 @@ on_client_connection_close_finish (GObject        *object,
    */
   if (!test->ignore_client_close_error)
     g_assert_no_error (error);
+  else
+    g_clear_error (&error);
 
   g_main_loop_quit (test->loop);
 }
@@ -1600,6 +1603,8 @@ test_client_auth_fail_missing_client_private_key (TestConnection *test,
 #else
   g_assert_error (test->server_error, G_TLS_ERROR, G_TLS_ERROR_NOT_TLS);
 #endif
+
+  g_object_unref (cert);
 }
 
 static void
