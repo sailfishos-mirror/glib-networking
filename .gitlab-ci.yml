@@ -85,6 +85,8 @@ fedora-x86_64:
     when: always
   coverage: '/^\s+lines\.+:\s+([\d.]+\%)\s+/'
 
+# FIXME: This uses -Dlibproxy=disabled due to leaks in libproxy:
+#   https://github.com/libproxy/libproxy/pull/357
 fedora-x86_64-asan:
   extends:
     - '.fdo.distribution-image@fedora'
@@ -98,7 +100,7 @@ fedora-x86_64-asan:
     - meson -Db_sanitize=address
             -Dgnutls=enabled
             -Dopenssl=enabled
-            -Dlibproxy=enabled
+            -Dlibproxy=disabled
             -Denvironment_proxy=enabled
             -Dgnome_proxy=enabled
             -Ddebug_logs=true
