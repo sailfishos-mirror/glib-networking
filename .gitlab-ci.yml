@@ -1,7 +1,7 @@
 include:
  - project: 'Infrastructure/freedesktop-ci-templates'
    file: 'templates/fedora.yml'
-   ref: 'c5626190ec14b475271288dda7a7dae8dbe0cd76'
+   ref: '5cc6ded703fc990f9d055f0d948ffd4460a9ca40'
  - component: gitlab.gnome.org/GNOME/citemplates/release-service@master
    inputs:
      dist-job-name: "fedora-x86_64-dist"
@@ -38,11 +38,11 @@ build.container.fedora@x86_64:
       lcov
       libasan
       meson
-      pkgconfig(gnutls)
-      pkgconfig(gsettings-desktop-schemas)
-      pkgconfig(libproxy-1.0)
-      pkgconfig(openssl)
-      pkgconfig(p11-kit-1)
+      'pkgconfig(gnutls)'
+      'pkgconfig(gsettings-desktop-schemas)'
+      'pkgconfig(libproxy-1.0)'
+      'pkgconfig(openssl)'
+      'pkgconfig(p11-kit-1)'
     FDO_DISTRIBUTION_EXEC: >-
       git clone --depth=1 https://gitlab.gnome.org/GNOME/glib.git &&
       pushd glib &&
