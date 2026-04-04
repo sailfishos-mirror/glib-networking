@@ -243,7 +243,11 @@ on_certificate_changed (GObject    *object,
   cert = g_tls_connection_get_certificate (G_TLS_CONNECTION (object));
 
   if (ssl && cert)
-    ssl_set_certificate (ssl, cert, NULL);
+    {
+      g_tls_connection_openssl_lock (G_TLS_CONNECTION_OPENSSL (object));
+      ssl_set_certificate (ssl, cert, NULL);
+      g_tls_connection_openssl_unlock (G_TLS_CONNECTION_OPENSSL (object));
+    }
 }
 
 static void

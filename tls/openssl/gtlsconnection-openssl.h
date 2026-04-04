@@ -43,10 +43,13 @@ struct _GTlsConnectionOpensslClass
   SSL *(*get_ssl) (GTlsConnectionOpenssl *connection);
 };
 
-SSL *g_tls_connection_openssl_get_ssl (GTlsConnectionOpenssl *connection);
+SSL *g_tls_connection_openssl_lock_ssl (GTlsConnectionOpenssl *connection);
 
 GTlsConnectionOpenssl *g_tls_connection_openssl_get_connection_from_ssl (SSL *ssl);
 
 GTlsProtocolVersion glib_protocol_version_from_openssl (int protocol_version);
+
+void g_tls_connection_openssl_lock   (GTlsConnectionOpenssl *openssl);
+void g_tls_connection_openssl_unlock (GTlsConnectionOpenssl *openssl);
 
 G_END_DECLS
