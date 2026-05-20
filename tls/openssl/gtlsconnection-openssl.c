@@ -337,7 +337,9 @@ perform_openssl_io (GTlsConnectionOpenssl  *openssl,
       if (io_timeout == 0)
         break;
 
+      g_tls_connection_openssl_unlock (openssl);
       g_tls_bio_wait_available (priv->bio, io_needed, io_timeout, cancellable);
+      ssl = g_tls_connection_openssl_lock_ssl (openssl);
     }
 
   if (status == G_TLS_CONNECTION_BASE_TRY_AGAIN)
