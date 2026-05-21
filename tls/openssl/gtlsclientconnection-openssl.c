@@ -115,6 +115,8 @@ g_tls_client_connection_openssl_get_property (GObject    *object,
   GList *accepted_cas;
   gint i;
 
+  g_tls_connection_openssl_lock (G_TLS_CONNECTION_OPENSSL (object));
+
   switch (prop_id)
     {
     case PROP_VALIDATION_FLAGS:
@@ -169,6 +171,8 @@ g_tls_client_connection_openssl_get_property (GObject    *object,
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     }
+
+  g_tls_connection_openssl_unlock (G_TLS_CONNECTION_OPENSSL (object));
 }
 
 static void
@@ -179,6 +183,8 @@ g_tls_client_connection_openssl_set_property (GObject      *object,
 {
   GTlsConnectionBase *tls = G_TLS_CONNECTION_BASE (object);
   GTlsClientConnectionOpenssl *openssl = G_TLS_CLIENT_CONNECTION_OPENSSL (object);
+
+  g_tls_connection_openssl_lock (G_TLS_CONNECTION_OPENSSL (object));
 
   switch (prop_id)
     {
@@ -203,6 +209,8 @@ g_tls_client_connection_openssl_set_property (GObject      *object,
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     }
+
+  g_tls_connection_openssl_unlock (G_TLS_CONNECTION_OPENSSL (object));
 }
 
 static void
@@ -292,8 +300,10 @@ handshake_thread_retrieve_certificate (SSL       *ssl,
   cert = g_tls_connection_get_certificate (G_TLS_CONNECTION (client));
   if (!cert)
     {
+      g_tls_connection_openssl_unlock (G_TLS_CONNECTION_OPENSSL (tls));
       if (g_tls_connection_base_handshake_thread_request_certificate (tls))
         cert = g_tls_connection_get_certificate (G_TLS_CONNECTION (client));
+      g_tls_connection_openssl_lock (G_TLS_CONNECTION_OPENSSL (tls));
     }
 
   if (cert)

@@ -81,6 +81,8 @@ g_tls_server_connection_openssl_get_property (GObject    *object,
 {
   GTlsServerConnectionOpenssl *openssl = G_TLS_SERVER_CONNECTION_OPENSSL (object);
 
+  g_tls_connection_openssl_lock (G_TLS_CONNECTION_OPENSSL (object));
+
   switch (prop_id)
     {
     case PROP_AUTHENTICATION_MODE:
@@ -90,6 +92,8 @@ g_tls_server_connection_openssl_get_property (GObject    *object,
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     }
+
+  g_tls_connection_openssl_unlock (G_TLS_CONNECTION_OPENSSL (object));
 }
 
 static void
@@ -100,6 +104,8 @@ g_tls_server_connection_openssl_set_property (GObject      *object,
 {
   GTlsServerConnectionOpenssl *openssl = G_TLS_SERVER_CONNECTION_OPENSSL (object);
 
+  g_tls_connection_openssl_lock (G_TLS_CONNECTION_OPENSSL (object));
+
   switch (prop_id)
     {
     case PROP_AUTHENTICATION_MODE:
@@ -109,6 +115,8 @@ g_tls_server_connection_openssl_set_property (GObject      *object,
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     }
+
+  g_tls_connection_openssl_unlock (G_TLS_CONNECTION_OPENSSL (object));
 }
 
 static int
@@ -125,6 +133,8 @@ g_tls_server_connection_openssl_prepare_handshake (GTlsConnectionBase  *tls,
   GTlsServerConnectionOpenssl *openssl = G_TLS_SERVER_CONNECTION_OPENSSL (tls);
   GTlsConnectionBaseClass *base_class = G_TLS_CONNECTION_BASE_CLASS (g_tls_server_connection_openssl_parent_class);
   int req_mode = 0;
+
+  g_tls_connection_openssl_lock (G_TLS_CONNECTION_OPENSSL (tls));
 
   switch (openssl->authentication_mode)
     {
@@ -143,6 +153,8 @@ g_tls_server_connection_openssl_prepare_handshake (GTlsConnectionBase  *tls,
   SSL_set_verify (openssl->ssl, req_mode, verify_callback);
   /* FIXME: is this ok? */
   SSL_set_verify_depth (openssl->ssl, 0);
+
+  g_tls_connection_openssl_unlock (G_TLS_CONNECTION_OPENSSL (tls));
 
   if (base_class->prepare_handshake)
     base_class->prepare_handshake (tls, advertised_protocols);
@@ -239,13 +251,14 @@ on_certificate_changed (GObject    *object,
   SSL *ssl;
   GTlsCertificate *cert;
 
-  ssl = g_tls_server_connection_openssl_get_ssl (G_TLS_CONNECTION_OPENSSL (object));
   cert = g_tls_connection_get_certificate (G_TLS_CONNECTION (object));
 
-  if (ssl && cert)
+  if (cert)
     {
       g_tls_connection_openssl_lock (G_TLS_CONNECTION_OPENSSL (object));
-      ssl_set_certificate (ssl, cert, NULL);
+      ssl = g_tls_server_connection_openssl_get_ssl (G_TLS_CONNECTION_OPENSSL (object));
+      if (ssl)
+        ssl_set_certificate (ssl, cert, NULL);
       g_tls_connection_openssl_unlock (G_TLS_CONNECTION_OPENSSL (object));
     }
 }
