@@ -43,7 +43,7 @@ struct _GTlsConnectionOpensslClass
   SSL *(*get_ssl) (GTlsConnectionOpenssl *connection);
 };
 
-SSL *g_tls_connection_openssl_lock_ssl (GTlsConnectionOpenssl *connection);
+SSL *g_tls_connection_openssl_get_ssl (GTlsConnectionOpenssl *connection);
 
 GTlsConnectionOpenssl *g_tls_connection_openssl_get_connection_from_ssl (SSL *ssl);
 
