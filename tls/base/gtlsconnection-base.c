@@ -1920,7 +1920,7 @@ g_tls_connection_base_handshake_async (GTlsConnection      *conn,
 
   thread_task = g_task_new (conn, cancellable, async_handshake_thread_completed, caller_task);
   g_task_set_source_tag (thread_task, g_tls_connection_base_handshake_async);
-  g_task_set_name (caller_task, "[glib-networking] g_tls_connection_base_handshake_async (thread task)");
+  g_task_set_name (thread_task, "[glib-networking] g_tls_connection_base_handshake_async (thread task)");
   g_task_set_priority (thread_task, io_priority);
 
   timeout = g_new0 (gint64, 1);
