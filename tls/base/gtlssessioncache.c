@@ -63,7 +63,7 @@ session_cache_cleanup (GHashTable *cache)
   gpointer key, value;
   GTlsCacheData *cache_data;
   gchar *session_id = NULL;
-  gint64 oldest_expiration_time = INT_MAX;
+  gint64 oldest_expiration_time = G_MAXINT64;
   gboolean removed = FALSE;
 
   time = g_get_monotonic_time ();
