@@ -239,6 +239,15 @@ end_openssl_io (GTlsConnectionOpenssl  *openssl,
           if (error && !my_error)
             my_error = g_error_new (G_TLS_ERROR, G_TLS_ERROR_EOF, _("%s: The connection is broken"), gettext (err_prefix));
         }
+
+#ifdef G_OS_UNIX
+      /* We cleared errno in perform_openssl_io() just before performing the I/O
+       * operation. If it's set here, then it should hopefully explain the
+       * syscall failure. See the comment in perform_openssl_io().
+       */
+      if (error && !my_error && !errno)
+        my_error = g_error_new (G_TLS_ERROR, G_TLS_ERROR_MISC, "%s: %s", gettext (err_prefix), g_strerror (errno));
+#endif
     }
 
   if (my_error)
@@ -295,7 +304,21 @@ perform_openssl_io (GTlsConnectionOpenssl  *openssl,
        * SSL_get_error(). From SSL_GET_ERROR(3ossl): "The current thread's error
        * queue must be empty before the TLS/SSL I/O operation is attempted, or
        * SSL_get_error() will not work reliably."
+       *
+       * Especially fragile: reset errno because if we receive SSL_ERROR_SYSCALL
+       * then error details might be in errno rather than in the error queue.
+       * "The OpenSSL error queue may contain more information on the error. For
+       * socket I/O on Unix systems, consult errno for details." Sadly, we
+       * cannot know for sure that GTlsConnection is wrapping a socket. It would
+       * be weird for it not to in typical usage, but theoretically the
+       * underlying stream could be anything. Accordingly, we'll consult errno
+       * only if it is nonzero. There should hopefully be no syscalls between
+       * perform_func() and the point where we eventually check errno in
+       * end_openssl_io().
        */
+#ifdef G_OS_UNIX
+      errno = 0;
+#endif
       ERR_clear_error ();
       ret = perform_func (ssl, perform_data);
       err_code = SSL_get_error (ssl, ret);
