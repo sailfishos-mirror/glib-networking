@@ -82,7 +82,7 @@ fedora-x86_64:
         -Dwerror=true
         _build/
     - meson compile -C _build/
-    - meson test -v -C _build/ --repeat=10 --wrapper=catch
+    - meson test -v -C _build/ --repeat=100 --wrapper=catch
     - meson install -C _build/
     - ninja -C _build/ coverage-html
   artifacts:
