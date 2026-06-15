@@ -168,6 +168,8 @@ G_GNUC_END_IGNORE_DEPRECATIONS
 
   gchar       *session_id;
   gboolean     session_resumption_enabled;
+
+  GMutex       sync_mutex;
 } GTlsConnectionBasePrivate;
 
 static void g_tls_connection_base_dtls_connection_iface_init (GDtlsConnectionInterface *iface);
@@ -278,6 +280,8 @@ g_tls_connection_base_init (GTlsConnectionBase *tls)
 
   g_mutex_init (&priv->op_mutex);
 
+  g_mutex_init (&priv->sync_mutex);
+
   priv->waiting_for_op = g_cancellable_new ();
 }
 
@@ -319,6 +323,8 @@ g_tls_connection_base_finalize (GObject *object)
   g_clear_object (&priv->waiting_for_op);
   g_mutex_clear (&priv->op_mutex);
 
+  g_mutex_clear (&priv->sync_mutex);
+
   g_clear_pointer (&priv->app_data_buf, g_byte_array_unref);
 
   g_clear_pointer (&priv->advertised_protocols, g_strfreev);
@@ -338,8 +344,12 @@ g_tls_connection_base_get_property (GObject    *object,
                                     GParamSpec *pspec)
 {
   GTlsConnectionBase *tls = G_TLS_CONNECTION_BASE (object);
-  GTlsConnectionBasePrivate *priv = g_tls_connection_base_get_instance_private (tls);
+  GTlsConnectionBasePrivate *priv;
   GTlsBackend *backend;
+
+  g_tls_connection_base_lock (tls);
+
+  priv = g_tls_connection_base_get_instance_private (tls);
 
   switch (prop_id)
     {
@@ -416,6 +426,8 @@ g_tls_connection_base_get_property (GObject    *object,
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     }
+
+  g_tls_connection_base_unlock (tls);
 }
 
 static void
@@ -425,11 +437,15 @@ g_tls_connection_base_set_property (GObject      *object,
                                     GParamSpec   *pspec)
 {
   GTlsConnectionBase *tls = G_TLS_CONNECTION_BASE (object);
-  GTlsConnectionBasePrivate *priv = g_tls_connection_base_get_instance_private (tls);
+  GTlsConnectionBasePrivate *priv;
   GInputStream *istream;
   GOutputStream *ostream;
   gboolean system_certdb;
   GTlsBackend *backend;
+
+  g_tls_connection_base_lock (tls);
+
+  priv = g_tls_connection_base_get_instance_private (tls);
 
   switch (prop_id)
     {
@@ -527,6 +543,8 @@ g_tls_connection_base_set_property (GObject      *object,
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     }
+
+  g_tls_connection_base_unlock (tls);
 }
 
 typedef enum {
@@ -1657,17 +1675,25 @@ finish_handshake (GTlsConnectionBase  *tls,
 {
   GTlsConnectionBasePrivate *priv = g_tls_connection_base_get_instance_private (tls);
   GTlsConnectionBaseClass *tls_class = G_TLS_CONNECTION_BASE_GET_CLASS (tls);
-  gchar *original_negotiated_protocol;
-  gchar *original_ciphersuite_name;
-  GTlsProtocolVersion original_protocol_version;
+  gchar *original_negotiated_protocol, *negotiated_protocol;
+  gchar *original_ciphersuite_name, *ciphersuite_name;
+  GTlsProtocolVersion original_protocol_version, protocol_version;
+  GTlsCertificate *peer_certificate;
+  GTlsCertificateFlags peer_certificate_errors;
   gboolean success;
   GError *my_error = NULL;
 
   g_tls_log_debug (tls, "finishing TLS handshake");
 
+  negotiated_protocol = NULL;
+  ciphersuite_name = NULL;
+  peer_certificate = NULL;
+
+  g_tls_connection_base_lock (tls);
   original_negotiated_protocol = g_steal_pointer (&priv->negotiated_protocol);
   original_ciphersuite_name = g_steal_pointer (&priv->ciphersuite_name);
   original_protocol_version = priv->protocol_version;
+  g_tls_connection_base_unlock (tls);
 
   success = g_task_propagate_boolean (task, &my_error);
   if (success)
@@ -1684,9 +1710,14 @@ finish_handshake (GTlsConnectionBase  *tls,
            */
           g_mutex_lock (&priv->verify_certificate_mutex);
 
+          peer_certificate = G_TLS_CONNECTION_BASE_GET_CLASS (tls)->retrieve_peer_certificate (tls);
+          peer_certificate_errors = verify_peer_certificate (tls, peer_certificate);
+
+          g_tls_connection_base_lock (tls);
           g_clear_object (&priv->peer_certificate);
-          priv->peer_certificate = G_TLS_CONNECTION_BASE_GET_CLASS (tls)->retrieve_peer_certificate (tls);
-          priv->peer_certificate_errors = verify_peer_certificate (tls, priv->peer_certificate);
+          priv->peer_certificate = g_steal_pointer (&peer_certificate);
+          priv->peer_certificate_errors = peer_certificate_errors;
+          g_tls_connection_base_unlock (tls);
 
           g_object_notify (G_OBJECT (tls), "peer-certificate");
           g_object_notify (G_OBJECT (tls), "peer-certificate-errors");
@@ -1707,22 +1738,28 @@ finish_handshake (GTlsConnectionBase  *tls,
 
   tls_class->complete_handshake (tls,
                                  success,
-                                 &priv->negotiated_protocol,
-                                 &priv->protocol_version,
-                                 &priv->ciphersuite_name,
+                                 &negotiated_protocol,
+                                 &protocol_version,
+                                 &ciphersuite_name,
                                  /* If we already have an error, ignore further errors. */
                                  my_error ? NULL : &my_error);
 
-  if (g_strcmp0 (original_negotiated_protocol, priv->negotiated_protocol) != 0)
+  if (g_strcmp0 (original_negotiated_protocol, negotiated_protocol) != 0)
     g_object_notify (G_OBJECT (tls), "negotiated-protocol");
   g_free (original_negotiated_protocol);
 
-  if (original_protocol_version != priv->protocol_version)
+  if (original_protocol_version != protocol_version)
     g_object_notify (G_OBJECT (tls), "protocol-version");
 
-  if (g_strcmp0 (original_ciphersuite_name, priv->ciphersuite_name) != 0)
+  if (g_strcmp0 (original_ciphersuite_name, ciphersuite_name) != 0)
     g_object_notify (G_OBJECT (tls), "ciphersuite-name");
   g_free (original_ciphersuite_name);
+
+  g_tls_connection_base_lock (tls);
+  priv->negotiated_protocol = g_steal_pointer (&negotiated_protocol);
+  priv->ciphersuite_name = g_steal_pointer (&ciphersuite_name);
+  priv->protocol_version = protocol_version;
+  g_tls_connection_base_unlock (tls);
 
   if (my_error && priv->started_handshake)
     priv->handshake_error = g_error_copy (my_error);
@@ -1749,6 +1786,7 @@ g_tls_connection_base_handshake (GTlsConnection   *conn,
   gboolean success;
   gint64 *timeout = NULL;
   GError *my_error = NULL;
+  gchar **advertised_protocols;
 
   if (!priv->need_handshake)
     return TRUE;
@@ -1760,8 +1798,14 @@ g_tls_connection_base_handshake (GTlsConnection   *conn,
 
   g_main_context_push_thread_default (priv->handshake_context);
 
+  g_tls_connection_base_lock (tls);
+  advertised_protocols = g_strdupv (priv->advertised_protocols);
+  g_tls_connection_base_unlock (tls);
+
   if (tls_class->prepare_handshake)
-    tls_class->prepare_handshake (tls, priv->advertised_protocols);
+    tls_class->prepare_handshake (tls, advertised_protocols);
+
+  g_clear_pointer (&advertised_protocols, g_strfreev);
 
   task = g_task_new (conn, cancellable, sync_handshake_thread_completed, NULL);
   g_task_set_source_tag (task, g_tls_connection_base_handshake);
@@ -1897,6 +1941,7 @@ g_tls_connection_base_handshake_async (GTlsConnection      *conn,
   GTlsConnectionBaseClass *tls_class = G_TLS_CONNECTION_BASE_GET_CLASS (tls);
   GTask *thread_task, *caller_task;
   gint64 *timeout = NULL;
+  gchar **advertised_protocols;
 
   caller_task = g_task_new (conn, cancellable, callback, user_data);
   g_task_set_source_tag (caller_task, g_tls_connection_base_handshake_async);
@@ -1915,8 +1960,14 @@ g_tls_connection_base_handshake_async (GTlsConnection      *conn,
   g_assert (!priv->handshake_context);
   priv->handshake_context = g_main_context_ref_thread_default ();
 
+  g_tls_connection_base_lock (tls);
+  advertised_protocols = g_strdupv (priv->advertised_protocols);
+  g_tls_connection_base_unlock (tls);
+
   if (tls_class->prepare_handshake)
-    tls_class->prepare_handshake (tls, priv->advertised_protocols);
+    tls_class->prepare_handshake (tls, advertised_protocols);
+
+  g_clear_pointer (&advertised_protocols, g_strfreev);
 
   thread_task = g_task_new (conn, cancellable, async_handshake_thread_completed, caller_task);
   g_task_set_source_tag (thread_task, g_tls_connection_base_handshake_async);
@@ -1971,6 +2022,7 @@ do_implicit_handshake (GTlsConnectionBase  *tls,
   GTlsConnectionBasePrivate *priv = g_tls_connection_base_get_instance_private (tls);
   GTlsConnectionBaseClass *tls_class = G_TLS_CONNECTION_BASE_GET_CLASS (tls);
   gint64 *thread_timeout = NULL;
+  gchar **advertised_protocols;
 
   g_tls_log_debug (tls, "Implicit TLS handshaking starts");
 
@@ -1998,8 +2050,14 @@ do_implicit_handshake (GTlsConnectionBase  *tls,
   g_task_set_task_data (priv->implicit_handshake,
                         thread_timeout, g_free);
 
+  g_tls_connection_base_lock (tls);
+  advertised_protocols = g_strdupv (priv->advertised_protocols);
+  g_tls_connection_base_unlock (tls);
+
   if (tls_class->prepare_handshake)
-    tls_class->prepare_handshake (tls, priv->advertised_protocols);
+    tls_class->prepare_handshake (tls, advertised_protocols);
+
+  g_clear_pointer (&advertised_protocols, g_strfreev);
 
   if (timeout != 0)
     {
@@ -2965,4 +3023,18 @@ g_tls_connection_base_datagram_based_iface_init (GDatagramBasedInterface *iface)
   iface->create_source = g_tls_connection_base_dtls_create_source;
   iface->condition_check = g_tls_connection_base_condition_check;
   iface->condition_wait = g_tls_connection_base_condition_wait;
+}
+
+void
+g_tls_connection_base_lock (GTlsConnectionBase *tls)
+{
+  GTlsConnectionBasePrivate *priv = g_tls_connection_base_get_instance_private (tls);
+  g_mutex_lock (&priv->sync_mutex);
+}
+
+void
+g_tls_connection_base_unlock (GTlsConnectionBase *tls)
+{
+  GTlsConnectionBasePrivate *priv = g_tls_connection_base_get_instance_private (tls);
+  g_mutex_unlock (&priv->sync_mutex);
 }

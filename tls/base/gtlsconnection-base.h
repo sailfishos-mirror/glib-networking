@@ -209,5 +209,7 @@ gboolean                  g_tls_connection_base_get_session_resumption  (GTlsCon
 
 void                      g_tls_connection_base_set_session_resumption  (GTlsConnectionBase *tls,
                                                                          gboolean session_resumption_enabled);
+void                      g_tls_connection_base_lock                    (GTlsConnectionBase *tls);
+void                      g_tls_connection_base_unlock                  (GTlsConnectionBase *tls);
 
 G_END_DECLS
