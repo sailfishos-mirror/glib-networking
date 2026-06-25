@@ -1,5 +1,5 @@
 project(
-  'glib-networking', 'c',
+  'glib-networking', 'c', 'cpp',
   version: '2.80.0.97',
   license: 'LGPL2.1+',
   meson_version: '>= 0.60.0',
@@ -16,6 +16,7 @@ installed_tests_metadir = join_paths(datadir, 'installed-tests', meson.project_n
 installed_tests_execdir = join_paths(libexecdir, 'installed-tests', meson.project_name())
 
 cc = meson.get_compiler('c')
+cxx = meson.get_compiler('cpp')
 host_system = host_machine.system()
 
 config_h = configuration_data()
@@ -47,6 +48,9 @@ add_project_arguments(common_flags, language: 'c')
 cflags = cc.get_supported_arguments(['-Werror=declaration-after-statement',
                                      '-Werror=implicit-function-declaration'])
 add_project_arguments(cflags, language: 'c')
+
+cxxflags = cxx.get_supported_arguments(['-Werror=thread-safety'])
+add_project_arguments(cxxflags, language: 'cpp')
 
 symbol_map = join_paths(meson.current_source_dir(), meson.project_name() + '.map')
 

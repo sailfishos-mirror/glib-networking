@@ -2,7 +2,7 @@ sources = files(
   'openssl-module.c',
   'gtlsbackend-openssl.c',
   'gtlscertificate-openssl.c',
-  'gtlsconnection-openssl.c',
+  'gtlsconnection-openssl.cpp',
   'gtlsserverconnection-openssl.c',
   'gtlsclientconnection-openssl.c',
   'gtlsdatabase-openssl.c',
