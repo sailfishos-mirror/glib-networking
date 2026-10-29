@@ -190,11 +190,11 @@ is_certificate_trusted (SecCertificateRef       *cert,
 
   for (i = 0; i < CFArrayGetCount (cert_trust_settings); i++)
     {
-      has_any_trust_entry = TRUE;
-
       CFDictionaryRef trust_settings;
       CFNumberRef trust_setting_number;
       CFStringRef policy_name;
+
+      has_any_trust_entry = TRUE;
 
       /* Ignore trust settings which are not SSL policies. */
       trust_settings = (CFDictionaryRef)CFArrayGetValueAtIndex (cert_trust_settings, i);
