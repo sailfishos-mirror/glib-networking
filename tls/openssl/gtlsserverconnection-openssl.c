@@ -31,6 +31,8 @@
 #include "openssl-include.h"
 #include <glib/gi18n-lib.h>
 
+#define SESSION_ID_CONTEXT "glib-networking"
+
 struct _GTlsServerConnectionOpenssl
 {
   GTlsConnectionOpenssl parent_instance;
@@ -401,6 +403,17 @@ g_tls_server_connection_openssl_initable_init (GInitable       *initable,
             SSL_OP_NO_TLSv1 |
             SSL_OP_NO_TLSv1_1;
   SSL_CTX_set_options (server->ssl_ctx, options);
+
+  if (!SSL_CTX_set_session_id_context (server->ssl_ctx,
+                                       (const unsigned char *)SESSION_ID_CONTEXT,
+                                       sizeof (SESSION_ID_CONTEXT) - 1))
+    {
+      ERR_error_string_n (ERR_get_error (), error_buffer, sizeof (error_buffer));
+      g_set_error (error, G_TLS_ERROR, G_TLS_ERROR_MISC,
+                   _("Could not create TLS context: %s"),
+                   error_buffer);
+      return FALSE;
+    }
 
   SSL_CTX_add_session (server->ssl_ctx, server->session);
 
