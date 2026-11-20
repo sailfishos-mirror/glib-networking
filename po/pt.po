@@ -8,31 +8,31 @@
 # Hugo Carvalho <hugokarvalho@hotmail.com>, 2020, 2021, 2022, 2023, 2024, 2015, 2026.
 # João Carvalhinho <joao.carvalhinho@gmail.com>, 2024.
 #
+# SPDX-FileCopyrightText: 2026 Cátia Silva <catias89@gmail.com>
 msgid ""
 msgstr ""
 "Project-Id-Version: 3.8\n"
-"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/glib-networking/"
-"issues\n"
-"POT-Creation-Date: 2026-09-23 19:10+0000\n"
-"PO-Revision-Date: 2026-10-01 14:37+0100\n"
-"Last-Translator: Hugo Carvalho <hugokarvalho@hotmail.com>\n"
-"Language-Team: Portuguese <hugokarvalho@hotmail.com.com>\n"
+"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/glib-networking/issues\n"
+"POT-Creation-Date: 2026-10-15 08:22+0000\n"
+"PO-Revision-Date: 2026-10-28 11:53+0000\n"
+"Last-Translator: Cátia Silva <catias89@gmail.com>\n"
+"Language-Team: Portuguese <li@pt.corg>\n"
 "Language: pt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.9\n"
+"X-Generator: Lokalize 26.04.3\n"
 
 #: proxy/libproxy/glibproxyresolver.c:165
 msgid "Proxy resolver internal error."
 msgstr "Erro interno de resolução do proxy."
 
-#: tls/base/gtlsconnection-base.c:615 tls/base/gtlsinputstream.c:78
+#: tls/base/gtlsconnection-base.c:734 tls/base/gtlsinputstream.c:78
 #: tls/base/gtlsinputstream.c:141 tls/base/gtlsoutputstream.c:78
 #: tls/base/gtlsoutputstream.c:143
 msgid "Connection is closed"
-msgstr "A ligação está fechada"
+msgstr "A ligação encontra-se fechada"
 
 #. Cannot perform a blocking operation during a handshake on the
 #. * same thread that triggered the handshake. The only way this can
@@ -41,40 +41,41 @@ msgstr "A ligação está fechada"
 #. * the handshake (forever, if there's no timeout). Even a close
 #. * op would deadlock here.
 #.
-#: tls/base/gtlsconnection-base.c:689
+#: tls/base/gtlsconnection-base.c:808
 msgid "Cannot perform blocking operation during TLS handshake"
 msgstr ""
-"Não foi possível efetuar operação de bloqueio durante a comunicação inicial "
+"Não foi possível efetuar a operação de bloqueio durante a comunicação inicial "
 "TLS"
 
-#: tls/base/gtlsconnection-base.c:754 tls/base/gtlsconnection-base.c:1300
+#: tls/base/gtlsconnection-base.c:873 tls/base/gtlsconnection-base.c:1419
 #: tls/openssl/gtlsconnection-openssl.c:379
 msgid "Socket I/O timed out"
 msgstr "Expirou E/S do socket"
 
-#: tls/base/gtlsconnection-base.c:926
+#: tls/base/gtlsconnection-base.c:1045
 msgid "Server required TLS certificate"
 msgstr "O servidor requer um certificado TLS"
 
-#: tls/base/gtlsconnection-base.c:1502
+#: tls/base/gtlsconnection-base.c:1621
 #, c-format
 msgid "Handshake is not finished, no channel binding information yet"
 msgstr ""
-"O aperto de mão não está terminado, ainda não há informação vinculativa do "
+"O aperto de mão não se encontra terminado, ainda não há informação vinculativa"
+" do "
 "canal"
 
-#: tls/base/gtlsconnection-base.c:1703 tls/gnutls/gtlsconnection-gnutls.c:484
+#: tls/base/gtlsconnection-base.c:1822 tls/gnutls/gtlsconnection-gnutls.c:484
 #: tls/openssl/gtlsconnection-openssl.c:184
-#: tls/openssl/gtlsconnection-openssl.c:816
+#: tls/openssl/gtlsconnection-openssl.c:815
 msgid "Unacceptable TLS certificate"
 msgstr "Certificado TLS inaceitável"
 
-#: tls/base/gtlsconnection-base.c:2179
+#: tls/base/gtlsconnection-base.c:2298
 #, c-format
 msgid "Receive flags are not supported"
 msgstr "Opções de receção não são suportadas"
 
-#: tls/base/gtlsconnection-base.c:2320
+#: tls/base/gtlsconnection-base.c:2439
 #, c-format
 msgid "Send flags are not supported"
 msgstr "Opções de envio não são suportadas"
@@ -120,7 +121,7 @@ msgid "No certificate data provided"
 msgstr "Não foram indicados quaisquer dados de certificado"
 
 #: tls/gnutls/gtlscertificate-gnutls.c:983
-#: tls/gnutls/gtlsconnection-gnutls.c:1014
+#: tls/gnutls/gtlsconnection-gnutls.c:1018
 #, c-format
 msgid "Cannot verify peer identity of unexpected type %s"
 msgstr "Não é possível verificar a identidade de pares do tipo inesperado %s"
@@ -131,7 +132,7 @@ msgid "Could not create TLS connection:"
 msgstr "Não foi possível criar uma ligação TLS:"
 
 #: tls/gnutls/gtlsconnection-gnutls.c:244
-#: tls/openssl/gtlsclientconnection-openssl.c:503
+#: tls/openssl/gtlsclientconnection-openssl.c:545
 #: tls/openssl/gtlsserverconnection-openssl.c:418
 #, c-format
 msgid "Could not create TLS connection: %s"
@@ -168,71 +169,72 @@ msgstr "Ataque de protocolo em versão anterior detetado"
 #, c-format
 msgid "Message is too large for DTLS connection; maximum is %u byte"
 msgid_plural "Message is too large for DTLS connection; maximum is %u bytes"
-msgstr[0] "Mensagem é demasiada longa para ligações DTLS; o máximo é %u byte"
+msgstr[0] "A mensagem é demasiada longa para ligações DTLS; o máximo é %u byte"
 msgstr[1] ""
-"Mensagem é demasiada longa para ligações DTLS; o máximo são %u bytes"
+"A mensagem é demasiada longa para ligações DTLS; o máximo são %u bytes"
 
 #: tls/gnutls/gtlsconnection-gnutls.c:516
 msgid "The operation timed out"
 msgstr "A operação expirou"
 
-#: tls/gnutls/gtlsconnection-gnutls.c:940
+#: tls/gnutls/gtlsconnection-gnutls.c:942
 msgid "Error performing TLS handshake"
 msgstr "Erro ao estabelecer a ligação TLS (handshake)"
 
-#: tls/gnutls/gtlsconnection-gnutls.c:1113
+#: tls/gnutls/gtlsconnection-gnutls.c:1130
 #, c-format
 msgid ""
 "Empty channel binding data indicates a bug in the TLS library implementation"
 msgstr ""
-"Dados de ligação do canal vazios indicam um problema na implementação da "
+"Os dados de ligação do canal vazios indicam um problema na implementação da "
 "biblioteca TLS"
 
-#: tls/gnutls/gtlsconnection-gnutls.c:1131
+#: tls/gnutls/gtlsconnection-gnutls.c:1148
 #, c-format
 msgid "Channel binding type is not implemented in the TLS library"
-msgstr "O tipo de ligação do canal não é implementado na biblioteca TLS"
+msgstr ""
+"O tipo de ligação do canal não se encontra implementado na biblioteca TLS"
 
-#: tls/gnutls/gtlsconnection-gnutls.c:1135
+#: tls/gnutls/gtlsconnection-gnutls.c:1152
 #, c-format
 msgid "Channel binding data is not yet available"
-msgstr "Os dados de ligação do canal ainda não estão disponíveis"
+msgstr "Os dados de ligação do canal ainda não se encontram disponíveis"
 
-#: tls/gnutls/gtlsconnection-gnutls.c:1187
-#: tls/openssl/gtlsconnection-openssl.c:791
+#: tls/gnutls/gtlsconnection-gnutls.c:1204
+#: tls/openssl/gtlsconnection-openssl.c:790
 #, c-format
 msgid "Requested channel binding type is not implemented"
 msgstr "O tipo de ligação do canal solicitado não foi implementado"
 
-#: tls/gnutls/gtlsconnection-gnutls.c:1208
-#: tls/gnutls/gtlsconnection-gnutls.c:1268
-#: tls/openssl/gtlsconnection-openssl.c:809
-#: tls/openssl/gtlsconnection-openssl.c:905
+#: tls/gnutls/gtlsconnection-gnutls.c:1225
+#: tls/gnutls/gtlsconnection-gnutls.c:1285
+#: tls/openssl/gtlsconnection-openssl.c:808
+#: tls/openssl/gtlsconnection-openssl.c:904
 msgid "Error reading data from TLS socket"
 msgstr "Erro ao ler dados do socket TLS"
 
 #. flags
-#: tls/gnutls/gtlsconnection-gnutls.c:1290
-#: tls/gnutls/gtlsconnection-gnutls.c:1353
-#: tls/openssl/gtlsconnection-openssl.c:984
+#: tls/gnutls/gtlsconnection-gnutls.c:1307
+#: tls/gnutls/gtlsconnection-gnutls.c:1370
+#: tls/openssl/gtlsconnection-openssl.c:983
 msgid "Error writing data to TLS socket"
 msgstr "Erro ao escrever dados no socket TLS"
 
-#: tls/gnutls/gtlsconnection-gnutls.c:1323
+#: tls/gnutls/gtlsconnection-gnutls.c:1340
 #, c-format
 msgid "Message of size %lu byte is too large for DTLS connection"
 msgid_plural "Message of size %lu bytes is too large for DTLS connection"
-msgstr[0] "Mensagem de tamanho %lu byte é demasiada longa para ligações DTLS"
-msgstr[1] "Mensagem de tamanho %lu bytes é demasiada longa para ligações DTLS"
+msgstr[0] "Mensagem de tamanho %lu byte é demasiado longa para ligações DTLS"
+msgstr[1] "Mensagem de tamanho %lu bytes é demasiado longa para ligações DTLS"
 
-#: tls/gnutls/gtlsconnection-gnutls.c:1325
+#: tls/gnutls/gtlsconnection-gnutls.c:1342
 #, c-format
 msgid "(maximum is %u byte)"
 msgid_plural "(maximum is %u bytes)"
 msgstr[0] "(máximo é %u byte)"
 msgstr[1] "(máximo são %u bytes)"
 
-#: tls/gnutls/gtlsconnection-gnutls.c:1372
+#: tls/gnutls/gtlsconnection-gnutls.c:1389
 #, c-format
 msgid "Error performing TLS close: %s"
 msgstr "Erro ao terminar a ligação TLS: %s"
@@ -242,29 +244,29 @@ msgstr "Erro ao terminar a ligação TLS: %s"
 msgid "Failed to allocate credentials: %s"
 msgstr "Falha ao alocar as credenciais: %s"
 
-#: tls/gnutls/gtlsdatabase-gnutls.c:593
+#: tls/gnutls/gtlsdatabase-gnutls.c:598
 msgid ""
 "Failed to load system trust store: GnuTLS was not configured with a system "
 "trust"
 msgstr ""
-"Falha ao carregar um espaço seguro no sistema: o GnuTLS não foi definido "
-"com um sistema de segurança"
+"Falha ao carregar um espaço seguro no sistema: o GnuTLS não foi definido com "
+"um sistema de segurança"
 
-#: tls/gnutls/gtlsdatabase-gnutls.c:598 tls/openssl/gtlsdatabase-openssl.c:385
+#: tls/gnutls/gtlsdatabase-gnutls.c:603 tls/openssl/gtlsdatabase-openssl.c:399
 #, c-format
 msgid "Failed to load system trust store: %s"
 msgstr "Falha ao carregar um espaço seguro no sistema: %s"
 
-#: tls/gnutls/gtlsdatabase-gnutls.c:604
+#: tls/gnutls/gtlsdatabase-gnutls.c:609
 #, c-format
 msgid ""
 "System trust contains zero trusted certificates; please investigate your "
 "GnuTLS configuration"
 msgstr ""
-"O espaço seguro do sistema não contem qualquer certificado; verifique a sua "
+"O espaço seguro do sistema não contém qualquer certificado; verifique a sua "
 "configuração GnuTLS"
 
-#: tls/gnutls/gtlsdatabase-gnutls.c:620
+#: tls/gnutls/gtlsdatabase-gnutls.c:625
 #, c-format
 msgid "Failed to initialize trust list: %s"
 msgstr "Falha a inicializar a lista de confiança: %s"
@@ -280,25 +282,25 @@ msgstr "Falha ao povoar uma lista segura de %s: %s"
 msgid "Certificate has no private key"
 msgstr "Certificado não tem chave privada"
 
-#: tls/openssl/gtlsclientconnection-openssl.c:337
+#: tls/openssl/gtlsclientconnection-openssl.c:376
 #: tls/openssl/gtlsserverconnection-openssl.c:292
 #, c-format
 msgid "Could not set TLS cipher list: %s"
 msgstr "Não foi possível definir a lista de cifras TLS: %s"
 
-#: tls/openssl/gtlsclientconnection-openssl.c:365
+#: tls/openssl/gtlsclientconnection-openssl.c:404
 #: tls/openssl/gtlsserverconnection-openssl.c:320
 #, c-format
 msgid "Could not set MAX protocol to %d: %s"
 msgstr "Não foi possível definir o protocolo MAX para %d: %s"
 
-#: tls/openssl/gtlsclientconnection-openssl.c:437
+#: tls/openssl/gtlsclientconnection-openssl.c:479
 #: tls/openssl/gtlsserverconnection-openssl.c:371
 #, c-format
 msgid "Could not create TLS session: %s"
 msgstr "Não foi possível criar a sessão TLS: %s"
 
-#: tls/openssl/gtlsclientconnection-openssl.c:454
+#: tls/openssl/gtlsclientconnection-openssl.c:496
 #: tls/openssl/gtlsserverconnection-openssl.c:383
 #, c-format
 msgid "Could not create TLS context: %s"
@@ -315,64 +317,65 @@ msgstr "O resumo é demasiado grande para chaves RSA"
 #: tls/openssl/gtlsconnection-openssl.c:241
 #, c-format
 msgid "%s: The connection is broken"
-msgstr "%s: a ligação está interrompida"
+msgstr "%s: a ligação encontra-se interrompida"
 
-#: tls/openssl/gtlsconnection-openssl.c:641
+#: tls/openssl/gtlsconnection-openssl.c:640
 msgid "The request is invalid."
 msgstr "O pedido é inválido."
 
-#: tls/openssl/gtlsconnection-openssl.c:663
+#: tls/openssl/gtlsconnection-openssl.c:662
 msgid "Channel binding data tls-unique is not available"
-msgstr "Os dados de ligação de canal tls-unique não estão disponíveis"
+msgstr "Os dados de ligação de canal tls-unique não se encontram disponíveis"
 
-#: tls/openssl/gtlsconnection-openssl.c:686
+#: tls/openssl/gtlsconnection-openssl.c:685
 msgid "X.509 Certificate is not available on the connection"
-msgstr "O certificado X.509 não está disponível na ligação"
+msgstr "O certificado X.509 não se encontra disponível na ligação"
 
-#: tls/openssl/gtlsconnection-openssl.c:695
+#: tls/openssl/gtlsconnection-openssl.c:694
 msgid "Unable to obtain certificate signature algorithm"
 msgstr "Incapaz de obter algoritmo de assinatura de certificado"
 
-#: tls/openssl/gtlsconnection-openssl.c:715
+#: tls/openssl/gtlsconnection-openssl.c:714
 msgid ""
 "Current X.509 certificate uses unknown or unsupported signature algorithm"
 msgstr ""
-"O certificado X.509 atual usa algoritmo de assinatura desconhecido ou não "
+"O certificado X.509 atual utiliza um algoritmo de assinatura desconhecido ou n"
+"ão "
 "compatível"
 
-#: tls/openssl/gtlsconnection-openssl.c:733
+#: tls/openssl/gtlsconnection-openssl.c:732
 msgid "Failed to generate X.509 certificate digest"
 msgstr "Falha ao gerar resumo do certificado X.509"
 
-#: tls/openssl/gtlsconnection-openssl.c:764
+#: tls/openssl/gtlsconnection-openssl.c:763
 msgid "TLS Connection does not support TLS-Exporter feature"
 msgstr "A ligação TLS não suporta a funcionalidade TLS-Exporter"
 
-#: tls/openssl/gtlsconnection-openssl.c:767
+#: tls/openssl/gtlsconnection-openssl.c:766
 msgid "Unexpected error while exporting keying data"
 msgstr "Erro inesperado ao exportar dados de codificação"
 
-#: tls/openssl/gtlsconnection-openssl.c:1045
+#: tls/openssl/gtlsconnection-openssl.c:1044
 msgid "Error performing TLS close"
 msgstr "Erro ao terminar a ligação TLS"
 
-#: tls/openssl/gtlsdatabase-openssl.c:174
+#: tls/openssl/gtlsdatabase-openssl.c:187
 msgid "Could not get trust settings for certificate"
 msgstr "Não foi possível obter as definições de confiança para o certificado"
 
-#: tls/openssl/gtlsdatabase-openssl.c:261
+#: tls/openssl/gtlsdatabase-openssl.c:275
 msgid "Could not retrieve certificates"
 msgstr "Não foi possível recuperar certificados"
 
-#: tls/openssl/gtlsdatabase-openssl.c:361
+#: tls/openssl/gtlsdatabase-openssl.c:375
 msgid "Could not get root certificate store"
 msgstr "Não foi possível obter espaço de certificado root"
 
-#: tls/openssl/gtlsdatabase-openssl.c:368
+#: tls/openssl/gtlsdatabase-openssl.c:382
 msgid "Could not get CA certificate store"
 msgstr "Não foi possível obter espaço de certificado CA"
 
-#: tls/openssl/gtlsdatabase-openssl.c:434
+#: tls/openssl/gtlsdatabase-openssl.c:448
 msgid "Could not create CA store"
 msgstr "Não foi possível criar espaço CA"
 
